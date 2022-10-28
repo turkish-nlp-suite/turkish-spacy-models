@@ -1,25 +1,36 @@
+# Variables can be referenced across the project.yml using ${vars.var_name}
 vars:
   config_dir: "configs"
   tagger_config: "tagger_cfg" 
+  ner_config: "ner_cfg" 
   lang: "tr"
   treebank: "BOUN"
   train_name: "tr_boun-ud-train"
   dev_name: "tr_boun-ud-dev"
   test_name: "tr_boun-ud-test"
   dataset_dir: "../datasets"
+  ner_dir: "NER"
+  xtreme: "XTREME"
+  twnertc: "TWNERTC"
   gpu: -1
 
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
 directories: [ "corpus", "training", "metrics"]
 
 workflows:
   all:
-    - convert-ud
-    - train-tagger
-    - evaluate-tagger
+    - preprocess_ud
+    - train_tagger
+    - evaluate_tagger
+    - preprocess_ner
+    - train_ner
+    - evaluate_ner
+    - assemble
 
 commands:
-  - name: convert-ud
-    help: "Convert UD data to spaCy format"
+  - name: preprocess_ud
+    help: "Convert UD treebank to spaCy format"
     script:
       - "mkdir -p corpus/${vars.treebank}"
       - "spacy convert ${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.train_name}.conllu corpus/${vars.treebank}  --converter conllu --n-sents 10 --merge-subtokens"
@@ -34,7 +45,7 @@ commands:
       - "corpus/${vars.treebank}/${vars.test_name}.spacy"
       - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
 
-  - name: train-tagger
+  - name: train_tagger
     help: "Train ${vars.treebank}"
     script:
       - "spacy train ${vars.config_dir}/${vars.tagger_config}.cfg
@@ -50,15 +61,69 @@ commands:
     outputs:
       - "training/${vars.treebank}/model-best"
 
-  - name: evaluate-tagger
-    help: "Evaluate on the test data and save the metrics"
+  - name: evaluate_tagger
+    help: "Evaluate tagger, parser, morphologizer and trainable lemmatizer on the test data and save the metrics"
     script:
-      - "spacy evaluate ./training/${vars.treebank}/model-best ./corpus/${vars.treebank}/${vars.test_name}.spacy --output ./metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
+      - "spacy evaluate ./training/${vars.treebank}/model-best corpus/${vars.treebank}/${vars.test_name}.spacy --output metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
     deps:
       - "training/${vars.treebank}/model-best"
       - "corpus/${vars.treebank}/${vars.test_name}.spacy"
     outputs:
       - "metrics/${vars.treebank}.json"
+
+  - name: preprocess_ner
+    help: "Convert NER data to spaCy's format"
+    script:
+       - "mkdir -p corpus/${vars.ner_dir}"
+       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/train.conllu ${vars.dataset_dir}/${vars.twnertc}/train.conllu > corpus/${vars.ner_dir}/train.conllu'
+       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/dev.conllu ${vars.dataset_dir}/${vars.twnertc}/dev.conllu > corpus/${vars.ner_dir}/dev.conllu'
+       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/test.conllu ${vars.dataset_dir}/${vars.twnertc}/test.conllu > corpus/${vars.ner_dir}/test.conllu'
+       - "spacy convert corpus/${vars.ner_dir}/train.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/dev.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/test.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
+    deps:
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/train.conllu"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/test.conllu"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/dev.conllu"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/train.conllu"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/test.conllu"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/dev.conllu"
+    outputs:
+      - "corpus/${vars.ner_dir}/train.conllu"
+      - "corpus/${vars.ner_dir}/dev.conllu"
+      - "corpus/${vars.ner_dir}/test.conllu"
+      - "corpus/${vars.ner_dir}/train.spacy"
+      - "corpus/${vars.ner_dir}/dev.spacy"
+      - "corpus/${vars.ner_dir}/test.spacy"
+
+  - name: train_ner
+    help: "Train NER"
+    script:
+      - "spacy train ${vars.config_dir}/${vars.ner_config}.cfg
+        --output training/${vars.ner_dir}/model-best
+        --gpu-id ${vars.gpu} --nlp.lang=${vars.lang}
+        --paths.train corpus/${vars.ner_dir}/train.spacy
+        --paths.dev corpus/${vars.ner_dir}/dev.spacy
+        --paths.tagger_model training/${vars.treebank}/model-best"
+    deps:
+      - "training/${vars.treebank}/model-best"
+      - "corpus/${vars.ner_dir}/train.spacy"
+      - "corpus/${vars.ner_dir}/dev.spacy"
+      - "${vars.config_dir}/${vars.ner_config}.cfg"
+    outputs:
+      - "training/${vars.ner_dir}/model-best"
+
+  - name: evaluate_ner
+    help: "Evaluate on the test data and save the metrics"
+    script:
+      - "mkdir -p metrics/${vars.ner_dir}"
+      - "spacy evaluate training/${vars.ner_dir}/model-best corpus/${vars.ner_dir}/test.spacy --output metrics/${vars.ner_dir}.json --gpu-id ${vars.gpu}"
+    deps:
+      - "training/${vars.ner_dir}/model-best"
+      - "corpus/${vars.ner_dir}/test.spacy"
+    outputs:
+      - "metrics/${vars.ner_dir}/config.json"
+
 
   - name: clean
     help: "Remove intermediate files"
