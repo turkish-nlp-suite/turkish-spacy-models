@@ -7,11 +7,12 @@ vars:
   train_name: "tr_boun-ud-train"
   dev_name: "tr_boun-ud-dev"
   test_name: "tr_boun-ud-test"
+  dataset_dir: "../datasets"
   gpu: 0 1 2 3
 
 # These are the directories that the project needs. The project CLI will make
 # sure that they always exist.
-directories: ["datasets", "corpus", "training", "metrics"]
+directories: [ "${vars.dataset_dir}", "corpus", "training", "metrics"]
 
 workflows:
   all:
@@ -23,13 +24,13 @@ commands:
   - name: convert-ud
     help: "Convert UD data to spaCy format"
     script:
-      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu corpus/${vars.treebank}  --converter conllu --n-sents 10 --merge-subtokens"
-      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.test_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
-      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.dev_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert ${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu corpus/${vars.treebank}  --converter conllu --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert ${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.test_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert ${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.dev_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
     deps:
-      - "datasets/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu"
-      - "datasets/UD-Turkish-${vars.treebank}/${vars.test_name}.conll"
-      - "datasets/UD-Turkish-${vars.treebank}/${vars.dev_name}.conll"
+      - "${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu"
+      - "${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.test_name}.conll"
+      - "${vars.dataset_dir}/UD-Turkish-${vars.treebank}/${vars.dev_name}.conll"
     outputs:
       - "corpus/${vars.treebank}/${vars.train_name}.spacy"
       - "corpus/${vars.treebank}/${vars.test_name}.spacy"
