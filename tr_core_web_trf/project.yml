@@ -1,0 +1,65 @@
+# Variables can be referenced across the project.yml using ${vars.var_name}
+vars:
+  config_dir: "configs"
+  tagger_config: "tagger_cfg" 
+  lang: "tr"
+  treebank: "BOUN"
+  train_name: "tr_boun-ud-train"
+  dev_name: "tr_boun-ud-dev"
+  test_name: "tr_boun-ud-test"
+  gpu: 0 1 2 3
+
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
+directories: ["datasets", "corpus", "training", "metrics"]
+
+workflows:
+  all:
+    - convert-ud
+    - train-tagger
+    - evaluate-tagger
+
+commands:
+  - name: convert-ud
+    help: "Convert UD data to spaCy format"
+    script:
+      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu corpus/${vars.treebank}  --converter conllu --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.test_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+      - "python -m spacy convert datasets/UD-Turkish-${vars.treebank}/${vars.dev_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+    deps:
+      - "datasets/UD-Turkish-${vars.treebank}/${vars.train_name}.conllu"
+      - "datasets/UD-Turkish-${vars.treebank}/${vars.test_name}.conll"
+      - "datasets/UD-Turkish-${vars.treebank}/${vars.dev_name}.conll"
+    outputs:
+      - "corpus/${vars.treebank}/${vars.train_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.test_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
+
+  - name: train-tagger
+    help: "Train ${vars.treebank}"
+    script:
+      - "python -m spacy train ${vars.configs}/${vars.tagger_config}.cfg --output training/${vars.treebank} --gpu-id ${vars.gpu} --paths.train corpus/${vars.treebank}/${vars.train_name}.spacy --paths.dev corpus/${vars.treebank}/${vars.dev_name}.spacy --nlp.lang=${vars.lang}"
+    deps:
+      - "corpus/${vars.treebank}/${vars.train_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
+      - "${vars.config}/${vars.tagger_config}.cfg"
+    outputs:
+      - "training/${vars.treebank}/model-best"
+
+  - name: evaluate-tagger
+    help: "Evaluate on the test data and save the metrics"
+    script:
+      - "python -m spacy evaluate ./training/${vars.treebank}/model-best ./corpus/${vars.treebank}/${vars.test_name}.spacy --output ./metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
+    deps:
+      - "training/${vars.treebank}/model-best"
+      - "corpus/${vars.treebank}/${vars.test_name}.spacy"
+    outputs:
+      - "metrics/${vars.treebank}.json"
+
+  - name: clean
+    help: "Remove intermediate files"
+    script:
+      - "rm -rf training/*"
+      - "rm -rf metrics/*"
+      - "rm -rf corpus/*"
+
