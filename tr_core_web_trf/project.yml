@@ -1,22 +1,34 @@
 # Variables can be referenced across the project.yml using ${vars.var_name}
 vars:
+  lang: "tr"
+
   config_dir: "configs"
+
   tagger_config: "tagger_cfg" 
   ner_config: "ner_cfg" 
-  lang: "tr"
+  assemble_config: "assemble" 
+
   treebank: "BOUN"
+
   train_name: "tr_boun-ud-train"
   dev_name: "tr_boun-ud-dev"
   test_name: "tr_boun-ud-test"
+
   dataset_dir: "../datasets"
+
   ner_dir: "NER"
   xtreme: "XTREME"
   twnertc: "TWNERTC"
+
+  package_name: tr_core_news_trf
+  core_package_name: core_news_trf
+  package_version: 3.4.2
+  packages_path: packages
   gpu: -1
 
 # These are the directories that the project needs. The project CLI will make
 # sure that they always exist.
-directories: [ "corpus", "training", "metrics"]
+directories: [ "corpus", "training", "metrics", "packages", "models"]
 
 workflows:
   all:
@@ -27,6 +39,7 @@ workflows:
     - train_ner
     - evaluate_ner
     - assemble
+    - package
 
 commands:
   - name: preprocess_ud
@@ -75,23 +88,23 @@ commands:
     help: "Convert NER data to spaCy's format"
     script:
        - "mkdir -p corpus/${vars.ner_dir}"
-       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/train.conllu ${vars.dataset_dir}/${vars.twnertc}/train.conllu > corpus/${vars.ner_dir}/train.conllu'
-       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/dev.conllu ${vars.dataset_dir}/${vars.twnertc}/dev.conllu > corpus/${vars.ner_dir}/dev.conllu'
-       - bash -c 'cat ${vars.dataset_dir}/${vars.xtreme}/test.conllu ${vars.dataset_dir}/${vars.twnertc}/test.conllu > corpus/${vars.ner_dir}/test.conllu'
-       - "spacy convert corpus/${vars.ner_dir}/train.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
-       - "spacy convert corpus/${vars.ner_dir}/dev.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
-       - "spacy convert corpus/${vars.ner_dir}/test.conllu corpus/${vars.ner_dir} --converter conllu --n-sents 10"
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/train.conll ${vars.dataset_dir}/NER/${vars.twnertc}/train.conll > corpus/${vars.ner_dir}/train.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll ${vars.dataset_dir}/NER/${vars.twnertc}/dev.conll > corpus/${vars.ner_dir}/dev.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/test.conll ${vars.dataset_dir}/NER/${vars.twnertc}/test.conll > corpus/${vars.ner_dir}/test.conll'
+       - "spacy convert corpus/${vars.ner_dir}/train.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/dev.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/test.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
     deps:
-      - "${vars.dataset_dir}/NER/${vars.xtreme}/train.conllu"
-      - "${vars.dataset_dir}/NER/${vars.xtreme}/test.conllu"
-      - "${vars.dataset_dir}/NER/${vars.xtreme}/dev.conllu"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/train.conllu"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/test.conllu"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/dev.conllu"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/train.conll"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/test.conll"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/train.conll"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/test.conll"
+      - "${vars.dataset_dir}/NER/${vars.twnertc}/dev.conll"
     outputs:
-      - "corpus/${vars.ner_dir}/train.conllu"
-      - "corpus/${vars.ner_dir}/dev.conllu"
-      - "corpus/${vars.ner_dir}/test.conllu"
+      - "corpus/${vars.ner_dir}/train.conll"
+      - "corpus/${vars.ner_dir}/dev.conll"
+      - "corpus/${vars.ner_dir}/test.conll"
       - "corpus/${vars.ner_dir}/train.spacy"
       - "corpus/${vars.ner_dir}/dev.spacy"
       - "corpus/${vars.ner_dir}/test.spacy"
@@ -100,7 +113,7 @@ commands:
     help: "Train NER"
     script:
       - "spacy train ${vars.config_dir}/${vars.ner_config}.cfg
-        --output training/${vars.ner_dir}/model-best
+        --output training/${vars.ner_dir}
         --gpu-id ${vars.gpu} --nlp.lang=${vars.lang}
         --paths.train corpus/${vars.ner_dir}/train.spacy
         --paths.dev corpus/${vars.ner_dir}/dev.spacy
@@ -111,7 +124,7 @@ commands:
       - "corpus/${vars.ner_dir}/dev.spacy"
       - "${vars.config_dir}/${vars.ner_config}.cfg"
     outputs:
-      - "training/${vars.ner_dir}/model-best"
+      - "training/${vars.ner_dir}"
 
   - name: evaluate_ner
     help: "Evaluate on the test data and save the metrics"
@@ -123,6 +136,45 @@ commands:
       - "corpus/${vars.ner_dir}/test.spacy"
     outputs:
       - "metrics/${vars.ner_dir}/config.json"
+
+  - name: assemble
+    help: "Assemble all the  components"
+    script:
+      - "spacy assemble configs/${vars.assemble_config}.cfg
+          models/${vars.package_name}-${vars.package_version}
+          --paths.tagger_model training/${vars.treebank}/model-best
+          --paths.ner_model training/${vars.ner_dir}/model-best"
+    deps:
+      - "training/${vars.treebank}/model-best" 
+      - "training/${vars.ner_dir}/model-best"
+    outputs:
+      - "models/${vars.package_name}-${vars.package_version}"
+
+  - name: package
+    help: "Package the trained model so it can be installed"
+    script:
+      - "spacy package
+          models/${vars.package_name}-${vars.package_version} ${vars.packages_path}
+          --build 'wheel'
+          --meta meta.json
+          --name ${vars.core_package_name}
+          --version ${vars.package_version}
+          --force"
+    deps:
+      - "models/${vars.package_name}-${vars.package_version}"
+      - "meta.json"
+    outputs_no_cache:
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/dist/${vars.package_name}-${vars.package_version}-py3-none-any.whl"
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
+
+
+  - name: smoke_test
+    help: "Smoke test the packaged model"
+    script:
+      - "python ../scripts/smoke_test.py
+          ${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
+    deps:
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
 
 
   - name: clean
