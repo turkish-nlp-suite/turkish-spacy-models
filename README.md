@@ -6,7 +6,7 @@ This repo contains config files for
 - tr_core_web_sm
 - tr_core_web_md
 - tr_core_web_lg
-_ tr_core_web_trf
+- tr_core_web_trf
 
 If you wanna cite, kindly use:
 
