@@ -1,0 +1,81 @@
+
+title: "Turkish medium word vectors"
+description: "Medium sized Floret word vectors for Turkish"
+spacy_version: ">=3.4.2,<3.5.0"
+vars:
+  vector_size: 50000
+  vector_dim: 300
+  max_texts: 4000000
+  texts_per_batch: 250000
+  minn: 4
+  maxn: 5
+  n_threads: 12
+  gpu_id: -1
+  floret_epochs: 5
+  floret_min_count: 100
+  floret_path: floret
+
+directories: ["assets", "corpus",  "metrics", "models"]
+
+assets:
+  # Floret
+  - dest: ${vars.floret_path}
+    git:
+      repo: https://github.com/explosion/floret
+      branch: main
+      path: ""
+
+workflows:
+  all:
+    - download-mc4
+    - clean-mc4
+    - build-floret
+    - train-floret-vecs
+
+commands:
+  - name: "download-mc4"
+    help: "Download a subset of the MC4 corpus"
+    script:
+      - "mkdir -p corpus/raw"
+      - "python -m tools.download_huggingface --cleanup mc4 tr ${vars.max_texts} ${vars.texts_per_batch} corpus/raw"
+    outputs:
+      - "corpus/raw"
+
+  - name: "clean-mc4"
+    help: "Clean and tokenize MC4 corpus"
+    script:
+      - "mkdir -p corpus/tokenized"
+      - "python -m scripts.tokenize_text --threads ${vars.n_threads} corpus/raw/ corpus/tokenized"
+      - "scripts/merge_text_batches.sh corpus/tokenized corpus/tokenized/merged.txt"
+    deps:
+      - "corpus/raw"
+    outputs:
+      - "corpus/tokenized"
+
+  - name: build_floret
+    help: "Build floret"
+    script:
+      - "make -C ${vars.floret_path}"
+
+  - name: "train-floret-vecs"
+    help: "Train floret vectors on the MC4 corpus"
+    script:
+      - "mkdir -p models"
+      - "software/floret/floret cbow -mode floret
+        -hashCount 2 -bucket ${vars.vector_size}
+        -minn ${vars.minn}
+        -maxn ${vars.maxn}
+        -minCount ${vars.floret_min_count}
+        -dim ${vars.vector_dim}
+        -neg 10
+        -epoch ${vars.floret_epochs}
+        -thread ${vars.n_threads}
+        -input corpus/tokenized/merged.txt
+        -output models/tr_floret_vectors_md"
+      - "rm -rf corpus/tokenized/"
+    deps:
+      - "software/floret"
+      - "corpus/tokenized/merged.txt"
+    outputs:
+      - "models/tr_floret_vectors_md.floret"
+
