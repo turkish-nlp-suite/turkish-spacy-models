@@ -1,0 +1,39 @@
+{
+  "lang":"tr",
+  "name":"core_news_md",
+  "version":"3.4.2",
+  "description":"Turkish medium pipeline for TrSpaCy. Components: tok2vec, tagger, morphologizer, lemmatizer, parser, ner",
+  "author":"Duygu Altinok",
+  "email":"duygu.altinok12@gmail.com",
+  "url":"https://github.com/turkish-nlp-suite/turkish-spacy-models",
+  "license":"cc-by-sa-4.0",
+  "spacy_version":">=3.4.2,<3.5.0",
+  "sources":[
+    {
+      "name":"UD Turkish BOUN",
+      "url":"https://github.com/UniversalDependencies/UD_Turkish-BOUN",
+      "license":"CC-BY-SA-4.0",
+      "author":"Türk, Utku; Atmaca, Furkan; Özateş,Şaziye Betül; Berk, Gözde; Bedir, Seyyit Talha; Köksal, Abdullatif; Öztürk Başaran, Balkız; Güngör, Tunga; Özgür, Arzucan"
+    },
+    {
+      "name":"Turkish Newspaper NER dataset",
+      "url":"https://github.com/turkish-nlp-suite/NER-datasets/tree/main/Turkish-NewsPaper-NER-Dataset",
+      "license":"MIT",
+      "author":"Duygu Altinok, Co-one Istanbul"
+    },
+    {
+      "name":"PANX/WikiANN",
+      "url":"http://hlt.sztaki.hu/resources/hunnerwiki.html",
+      "license":"CC-BY-4.0",
+      "author":"Xiaoman Pan, Boliang Zhang, Jonathan May, Joel Nothman, Kevin Knight, Heng Ji"
+    },
+    {
+      "name":"Medium-sized Turkish Floret word vectors (MC4 corpus)",
+      "url":"https://huggingface.co/turkish-nlp-suite/tr_vectors_web_md",
+      "license":"CC-BY-SA-4.0",
+      "author":"Duygu Altinok"
+    }
+  ]
+}
+
+
