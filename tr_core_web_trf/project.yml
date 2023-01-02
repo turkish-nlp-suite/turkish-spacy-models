@@ -154,7 +154,7 @@ commands:
     help: "Package the trained model so it can be installed"
     script:
       - "spacy package
-          models/${vars.package_name}-${vars.package_version} ${vars.packages_path}
+          packages/${vars.package_name}-${vars.package_version} ${vars.packages_path}
           --build 'wheel'
           --meta meta.json
           --name ${vars.core_package_name}
