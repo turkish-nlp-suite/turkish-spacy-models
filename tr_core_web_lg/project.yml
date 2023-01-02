@@ -1,0 +1,206 @@
+# Variables can be referenced across the project.yml using ${vars.var_name}
+vars:
+  lang: tr
+
+  config_dir: configs
+
+  tagger_config: tagger_cfg
+  ner_config: ner_cfg
+  assemble_config: assemble
+
+  treebank: BOUN
+
+  train_name: tr_boun-ud-train
+  dev_name: tr_boun-ud-dev
+  test_name: tr_boun-ud-test
+
+  dataset_dir: ../datasets
+
+  ner_dir: NER
+  xtreme: XTREME
+  tnewsner: TNEWSNER
+  
+  vectors: floret.vectors
+  vector_path: ../duygu-fl-vectors-medium/spacy-vectors-builder/big_model/models
+
+  package_name: tr_core_news_lg
+  core_package_name: core_news_lg
+  package_version: 3.4.2
+  models_path: models
+  packages_path: packages
+  gpu: -1
+
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
+directories: ["corpus", "training", "metrics", "packages", "models"]
+
+workflows:
+  all:
+    - init_vectors
+    - preprocess_ud
+    - train_tagger
+    - evaluate_tagger
+    - preprocess_ner
+    - train_ner
+    - evaluate_ner
+    - assemble
+    - package
+
+commands:
+  - name: init_vectors
+    help: "Initialize vectors"
+    script:
+      - "spacy init vectors ${vars.lang} ${vars.vector_path}/tr_floret_vectors_lg.floret
+          --mode floret
+          ${vars.models_path}/${vars.vectors}
+          -n ${vars.package_name}.vectors"
+    deps:
+      - ${vars.vector_path}/tr_floret_vectors_lg.floret
+    outputs:
+      - ${vars.models_path}/${vars.vectors}
+
+  - name: preprocess_ud
+    help: "Convert UD treebank to spaCy format"
+    script:
+      - "mkdir -p corpus/${vars.treebank}"
+      - "spacy convert ${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.train_name}.conllu corpus/${vars.treebank}  --converter conllu --n-sents 10 --merge-subtokens"
+      - "spacy convert ${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.test_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+      - "spacy convert ${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.dev_name}.conllu  corpus/${vars.treebank} --converter conllu --n-sents 10 --merge-subtokens"
+    deps:
+      - "${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.train_name}.conllu"
+      - "${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.test_name}.conllu"
+      - "${vars.dataset_dir}/UD/UD_Turkish-${vars.treebank}/${vars.dev_name}.conllu"
+    outputs:
+      - "corpus/${vars.treebank}/${vars.train_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.test_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
+
+  - name: train_tagger
+    help: "Train ${vars.treebank}"
+    script:
+      - "spacy train ${vars.config_dir}/${vars.tagger_config}.cfg
+               --output training/${vars.treebank}
+               --gpu-id ${vars.gpu}
+               --paths.train corpus/${vars.treebank}/${vars.train_name}.spacy
+               --paths.dev corpus/${vars.treebank}/${vars.dev_name}.spacy
+               --paths.vectors ${vars.models_path}/${vars.vectors}
+               --nlp.lang=${vars.lang}"
+    deps:
+      - "corpus/${vars.treebank}/${vars.train_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
+      - "${vars.models_path}/${vars.vectors}"
+      - "${vars.config_dir}/${vars.tagger_config}.cfg"
+    outputs:
+      - "training/${vars.treebank}/model-best"
+
+  - name: evaluate_tagger
+    help: "Evaluate tagger, parser, morphologizer and trainable lemmatizer on the test data and save the metrics"
+    script:
+      - "spacy evaluate ./training/${vars.treebank}/model-best corpus/${vars.treebank}/${vars.test_name}.spacy --output metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
+    deps:
+      - "training/${vars.treebank}/model-best"
+      - "corpus/${vars.treebank}/${vars.test_name}.spacy"
+    outputs:
+      - "metrics/${vars.treebank}.json"
+
+  - name: preprocess_ner
+    help: "Convert NER data to spaCy's format"
+    script:
+       - "mkdir -p corpus/${vars.ner_dir}"
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/train.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/train.conll > corpus/${vars.ner_dir}/train.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/dev.conll > corpus/${vars.ner_dir}/dev.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/test.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/test.conll > corpus/${vars.ner_dir}/test.conll'
+       - "spacy convert corpus/${vars.ner_dir}/train.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/dev.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
+       - "spacy convert corpus/${vars.ner_dir}/test.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
+    deps:
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/train.conll"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/test.conll"
+      - "${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/train.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/test.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/dev.conll"
+    outputs:
+      - "corpus/${vars.ner_dir}/train.conll"
+      - "corpus/${vars.ner_dir}/dev.conll"
+      - "corpus/${vars.ner_dir}/test.conll"
+      - "corpus/${vars.ner_dir}/train.spacy"
+      - "corpus/${vars.ner_dir}/dev.spacy"
+      - "corpus/${vars.ner_dir}/test.spacy"
+
+
+  - name: train_ner
+    help: "Train NER"
+    script:
+      - "spacy train ${vars.config_dir}/${vars.ner_config}.cfg
+        --output training/${vars.ner_dir}
+        --gpu-id ${vars.gpu} --nlp.lang=${vars.lang}
+        --paths.train corpus/${vars.ner_dir}/train.spacy
+        --paths.vectors ${vars.models_path}/${vars.vectors}
+        --paths.dev corpus/${vars.ner_dir}/dev.spacy
+        --paths.tagger_model training/${vars.treebank}/model-best"
+    deps:
+      - "training/${vars.treebank}/model-best"
+      - "corpus/${vars.ner_dir}/train.spacy"
+      - "corpus/${vars.ner_dir}/dev.spacy"
+      - "${vars.models_path}/${vars.vectors}"
+      - "${vars.config_dir}/${vars.ner_config}.cfg"
+    outputs:
+      - "training/${vars.ner_dir}"
+
+  - name: evaluate_ner
+    help: "Evaluate on the test data and save the metrics"
+    script:
+      - "mkdir -p metrics/${vars.ner_dir}"
+      - "spacy evaluate training/${vars.ner_dir}/model-best corpus/${vars.ner_dir}/test.spacy --output metrics/${vars.ner_dir}.json --gpu-id ${vars.gpu}"
+    deps:
+      - "training/${vars.ner_dir}/model-best"
+      - "corpus/${vars.ner_dir}/test.spacy"
+    outputs:
+      - "metrics/${vars.ner_dir}/config.json"
+
+  - name: assemble
+    help: "Assemble all the  components"
+    script:
+      - "spacy assemble configs/${vars.assemble_config}.cfg
+          models/${vars.package_name}-${vars.package_version}
+          --paths.tagger_model training/${vars.treebank}/model-best
+          --paths.ner_model training/${vars.ner_dir}/model-best"
+    deps:
+      - "training/${vars.treebank}/model-best" 
+      - "training/${vars.ner_dir}/model-best"
+    outputs:
+      - "models/${vars.package_name}-${vars.package_version}"
+
+  - name: package
+    help: "Package the trained model so it can be installed"
+    script:
+      - "spacy package
+          models/${vars.package_name}-${vars.package_version} ${vars.packages_path}
+          --build 'wheel'
+          --meta meta.json
+          --name ${vars.core_package_name}
+          --version ${vars.package_version}
+          --force"
+    deps:
+      - "models/${vars.package_name}-${vars.package_version}"
+      - "meta.json"
+    outputs_no_cache:
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/dist/${vars.package_name}-${vars.package_version}-py3-none-any.whl"
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
+
+
+  - name: smoke_test
+    help: "Smoke test the packaged model"
+    script:
+      - "python ../scripts/smoke_test.py
+          ${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
+    deps:
+      - "${vars.packages_path}/${vars.package_name}-${vars.package_version}/${vars.package_name}/${vars.package_name}-${vars.package_version}"
+
+
+  - name: clean
+    help: "Remove intermediate files"
+    script:
+      - "rm -rf training/*"
+      - "rm -rf metrics/*"
