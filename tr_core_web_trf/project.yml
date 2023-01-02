@@ -18,7 +18,7 @@ vars:
 
   ner_dir: "NER"
   xtreme: "XTREME"
-  twnertc: "TWNERTC"
+  tnewsner: "TNEWSNER"
 
   package_name: tr_core_news_trf
   core_package_name: core_news_trf
@@ -88,9 +88,9 @@ commands:
     help: "Convert NER data to spaCy's format"
     script:
        - "mkdir -p corpus/${vars.ner_dir}"
-       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/train.conll ${vars.dataset_dir}/NER/${vars.twnertc}/train.conll > corpus/${vars.ner_dir}/train.conll'
-       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll ${vars.dataset_dir}/NER/${vars.twnertc}/dev.conll > corpus/${vars.ner_dir}/dev.conll'
-       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/test.conll ${vars.dataset_dir}/NER/${vars.twnertc}/test.conll > corpus/${vars.ner_dir}/test.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/train.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/train.conll > corpus/${vars.ner_dir}/train.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/dev.conll > corpus/${vars.ner_dir}/dev.conll'
+       - bash -c 'cat ${vars.dataset_dir}/NER/${vars.xtreme}/test.conll ${vars.dataset_dir}/NER/${vars.tnewsner}/test.conll > corpus/${vars.ner_dir}/test.conll'
        - "spacy convert corpus/${vars.ner_dir}/train.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
        - "spacy convert corpus/${vars.ner_dir}/dev.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
        - "spacy convert corpus/${vars.ner_dir}/test.conll corpus/${vars.ner_dir} --converter ner --n-sents 10"
@@ -98,9 +98,9 @@ commands:
       - "${vars.dataset_dir}/NER/${vars.xtreme}/train.conll"
       - "${vars.dataset_dir}/NER/${vars.xtreme}/test.conll"
       - "${vars.dataset_dir}/NER/${vars.xtreme}/dev.conll"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/train.conll"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/test.conll"
-      - "${vars.dataset_dir}/NER/${vars.twnertc}/dev.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/train.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/test.conll"
+      - "${vars.dataset_dir}/NER/${vars.tnewsner}/dev.conll"
     outputs:
       - "corpus/${vars.ner_dir}/train.conll"
       - "corpus/${vars.ner_dir}/dev.conll"
