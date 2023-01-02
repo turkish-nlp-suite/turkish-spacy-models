@@ -81,13 +81,14 @@ commands:
       - "spacy train ${vars.config_dir}/${vars.tagger_config}.cfg
                --output training/${vars.treebank}
                --gpu-id ${vars.gpu}
-               --paths.train ${vars.corpus}/${vars.treebank}/${vars.train_name}.spacy
-               --paths.dev ${vars.corpus}/${vars.treebank}/${vars.dev_name}.spacy
+               --paths.train corpus/${vars.treebank}/${vars.train_name}.spacy
+               --paths.dev corpus/${vars.treebank}/${vars.dev_name}.spacy
                --paths.vectors ${vars.models_path}/${vars.vectors}
                --nlp.lang=${vars.lang}"
     deps:
-      - "${vars.corpus}/${vars.treebank}/${vars.train_name}.spacy"
-      - "${vars.corpus}/${vars.treebank}/${vars.dev_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.train_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.dev_name}.spacy"
+      - "${vars.models_path}/${vars.vectors}"
       - "${vars.config_dir}/${vars.tagger_config}.cfg"
     outputs:
       - "training/${vars.treebank}/model-best"
@@ -95,10 +96,10 @@ commands:
   - name: evaluate_tagger
     help: "Evaluate tagger, parser, morphologizer and trainable lemmatizer on the test data and save the metrics"
     script:
-      - "spacy evaluate ./training/${vars.treebank}/model-best ${vars.corpus}/${vars.treebank}/${vars.test_name}.spacy --output metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
+      - "spacy evaluate ./training/${vars.treebank}/model-best corpus/${vars.treebank}/${vars.test_name}.spacy --output metrics/${vars.treebank}.json --gpu-id ${vars.gpu}"
     deps:
       - "training/${vars.treebank}/model-best"
-      - "${vars.corpus}/${vars.treebank}/${vars.test_name}.spacy"
+      - "corpus/${vars.treebank}/${vars.test_name}.spacy"
     outputs:
       - "metrics/${vars.treebank}.json"
 
@@ -134,13 +135,14 @@ commands:
         --output training/${vars.ner_dir}
         --gpu-id ${vars.gpu} --nlp.lang=${vars.lang}
         --paths.vectors ${vars.models_path}/${vars.vectors}
-        --paths.train ${vars.corpus}/${vars.ner_dir}/train.spacy
-        --paths.dev ${vars.corpus}/${vars.ner_dir}/dev.spacy
+        --paths.train corpus/${vars.ner_dir}/train.spacy
+        --paths.dev corpus/${vars.ner_dir}/dev.spacy
         --paths.tagger_model training/${vars.treebank}/model-best"
     deps:
       - "training/${vars.treebank}/model-best"
-      - "${vars.corpus}/${vars.ner_dir}/train.spacy"
-      - "${vars.corpus}/${vars.ner_dir}/dev.spacy"
+      - "${vars.models_path}/${vars.vectors}"
+      - "corpus/${vars.ner_dir}/train.spacy"
+      - "corpus/${vars.ner_dir}/dev.spacy"
       - "${vars.config_dir}/${vars.ner_config}.cfg"
     outputs:
       - "training/${vars.ner_dir}"
@@ -149,10 +151,10 @@ commands:
     help: "Evaluate on the test data and save the metrics"
     script:
       - "mkdir -p metrics/${vars.ner_dir}"
-      - "spacy evaluate training/${vars.ner_dir}/model-best ${vars.corpus}/${vars.ner_dir}/test.spacy --output metrics/${vars.ner_dir}.json --gpu-id ${vars.gpu}"
+      - "spacy evaluate training/${vars.ner_dir}/model-best corpus/${vars.ner_dir}/test.spacy --output metrics/${vars.ner_dir}.json --gpu-id ${vars.gpu}"
     deps:
       - "training/${vars.ner_dir}/model-best"
-      - "${vars.corpus}/${vars.ner_dir}/test.spacy"
+      - "corpus/${vars.ner_dir}/test.spacy"
     outputs:
       - "metrics/${vars.ner_dir}/config.json"
 
