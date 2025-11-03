@@ -1,6 +1,6 @@
 # turkish-spacy-models
 
-Welcome to page of Turkish spaCy models. You can find all the models under our [Huggingface repo](https://huggingface.co/turkish-nlp-suite).
+Welcome to page of Turkish spaCy models. You can find all the models under our [Huggingface collection](https://huggingface.co/collections/turkish-nlp-suite/turkish-spacy-models).
 This repo contains config files for
 
 - tr_core_web_md
@@ -19,11 +19,11 @@ and is packaged with medium sized Floret word vectors.
 `tr_core_web_trf` is a Tranformer based pipeline. It offers a great accuracy, if you have good computing resources, this is your model of choice (even better some GPUs).
 
 ## Installation
-You can download all the models from Huggingface:
+You can download all the models from Huggingface, for more information please visit models' individual HF repos: [trf](https://huggingface.co/turkish-nlp-suite/tr_core_news_trf), [lg](https://huggingface.co/turkish-nlp-suite/tr_core_news_lg), [md](https://huggingface.co/turkish-nlp-suite/tr_core_news_md). Still installing at a quick glance:
 
-* Transformer based model `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_trf/resolve/main/tr_core_news_trf-any-py3-none-any.whl`
-* Large model: `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_lg/resolve/main/tr_core_news_lg-any-py3-none-any.whl`
-* Medium model: `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-any-py3-none-any.whl`
+* Transformer based model `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_trf/resolve/main/tr_core_news_trf-1.0-py3-none-any.whl`
+* Large model: `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_lg/resolve/main/tr_core_news_lg-1.0-py3-none-any.whl`
+* Medium model: `pip install https://huggingface.co/turkish-nlp-suite/tr_core_news_md/resolve/main/tr_core_news_md-1.0-py3-none-any.whl`
 
 ## Usage at a glance
 
@@ -36,7 +36,7 @@ nlp = spacy.load("tr_core_news_trf")
 doc = nlp("Dün ben de gittim.")
 ```
 
-Documentation is available on our website: [TODO]
+For a quickstart, Colab code is available for all the models including installing, importing models and some minimal code for all the models, [trf](https://colab.research.google.com/drive/1pe9uZ9YFCmQn342XytYCFBzZq0s8if4a?usp=sharing), [lg](https://colab.research.google.com/drive/1mJIb4DBo83uZXIf9tFtcLC23rDWGRMey?usp=sharing) and [md](https://colab.research.google.com/drive/1pf1uJcs83y8rd8nkOfcvTuSv3bPAS9_t?usp=sharing)
 
 ## Tutorials
 Please visit my channel for two playlists [Hızlı spaCy Türkçe tarifleri](https://www.youtube.com/playlist?list=PLJTHlIwB8VcoWxYHnsZOQCxWOraW42NBj) and [spaCy modeli nasıl yapılır?](https://www.youtube.com/playlist?list=PLJTHlIwB8Vcp_1b1eFwKcKKmzfs16EFtH). You'll find quick recipes with spaCy Turkish in the first playlist and the second playlist gives details of how to train&package a model for a new language.
