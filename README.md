@@ -1,6 +1,6 @@
 # turkish-spacy-models
 
-Welcome to page of Turkish spaCy models. You can find all the models under our [Huggingface collection](https://huggingface.co/collections/turkish-nlp-suite/turkish-spacy-models).
+Welcome to page of Turkish spaCy models. You can find all the models under our [Huggingface collection](https://huggingface.co/collections/turkish-nlp-suite/turkish-spacy-models). The official Huggingface repo for our organization is [Turkish NLP Suite HF repo](https://huggingface.co/collections/turkish-nlp-suite).
 This repo contains config files for
 
 - tr_core_web_md
